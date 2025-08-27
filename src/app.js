@@ -2,27 +2,25 @@ const express = require("express");
 
 const app = express();
 
-app.use("/User", (req, res, next) => {
-    console.log("server 1!!");
-    // res.send("Response1");
-    next();
-},
-    (req, res, next) => {
-        console.log("server 2!!");
-        // res.send("Response2");
-        next();
-    
-},
-    (req, res, next) => {
-        console.log("server 3!!");
-        res.send("Response3");
-        next();
+app.use("/", (err, req, res, next) => {
+    if (err) {
+        res.status(500).send("Something went wrong");
+    }
+});
+
+app.get("/getUserData", (req, res) => {
+    throw new Error("ewhgkq");
+    res.send("user data send");
     
 });
 
-
+app.use("/", (err, req, res, next) => {
+    if (err) {
+        res.status(500).send("Something went wrong");
+    }
+});
 
 app.listen(8055, () => {
-    console.log("Server is successfully running on port 7777......");
+    console.log("Server is successfully running on port 8055......");
     
 });
