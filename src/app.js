@@ -4,19 +4,54 @@ const connectDB = require("./config/database");
 const app = express();
 const User = require("./models/user");
 const { ReturnDocument } = require("mongodb");
+const { validateSignUpData } = require("./utils/validation");
+const bcrypt = require("bcrypt");
 
 app.use(express.json());
 
 app.post("/signup", async (req, res) => {
-  const user = new User(req.body);
-  
+  try {
+    //validation of data
+    validateSignUpData(req);
+    const { firstName, lastName, emailId, password } = req.body;
 
-try {
+    //encrypt the password
+    const passwordHash = await bcrypt.hash(password, 10);
+    console.log(passwordHash);
+    
+
+    //Creating new instance of data model
+    const user = new User({
+      firstName,
+      lastName,
+      emailId,
+      password: passwordHash,
+    });
+
+
     await user.save();
     res.send("userdata added successfully");
-} catch (err) {
+  } catch (err) {
     res.status(400).send("Error save the User:" + err.message);
+  }
+});
+
+app.post("/login", async (req, res) => {
+  try {
+    const { emailId, password } = req.body;
+    const user = await User.findOne({ emailId: emailId });
+    if (!user) {
+      throw new Error("There is no User With this EmailId");
     }
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (isPasswordValid) {
+      res.send("Login SuccessFull");
+    } else {
+      throw new Error("password is not Correct");
+    }
+  } catch (err) {
+    res.status(400).send("ERROR:" + err.message);
+  }
 });
 
 app.get("/user", async (req, res) => {
