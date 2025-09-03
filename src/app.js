@@ -3,6 +3,7 @@ const express = require("express");
 const connectDB = require("./config/database");
 const app = express();
 const User = require("./models/user");
+const { ReturnDocument } = require("mongodb");
 
 app.use(express.json());
 
@@ -56,11 +57,25 @@ app.delete("/user", async (req, res) => {
 
 //Update a user
 
-app.patch("/user", async (req, res) => {
-  const userId = req.body.userId;
+app.patch("/user/:id", async (req, res) => {
+  const userId = req.params.id;
   const data = req.body;
+
   try {
-    await User.findByIdAndUpdate({_id:userId }, data);
+    const ALLOWED_UPDATES = ["userId", "gender", "age", "photoUrl", "skills", "about"];
+    const isUpdateAllowed = Object.keys(data).every((k) =>
+      ALLOWED_UPDATES.includes(k)
+    );
+    if (!isUpdateAllowed) {
+      throw new Error("Update not Allowed");
+    }
+  
+    const user = await User.findByIdAndUpdate({ _id: userId }, data, {
+      returnDocument: "after",
+      runValidators: "true",
+    });
+    console.log(user);
+    
     res.send("User has been Updated Successfully");
   } catch (err){
     res.status(404).send("Something went wrong");
