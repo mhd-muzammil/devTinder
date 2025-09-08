@@ -6,8 +6,13 @@ const User = require("./models/user");
 const { ReturnDocument } = require("mongodb");
 const { validateSignUpData } = require("./utils/validation");
 const bcrypt = require("bcrypt");
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
+const user = require("./models/user");
+const { userAuth } = require("./middlewares/Auth");
 
 app.use(express.json());
+app.use(cookieParser());
 
 app.post("/signup", async (req, res) => {
   try {
@@ -45,7 +50,15 @@ app.post("/login", async (req, res) => {
     }
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (isPasswordValid) {
-      res.send("Login SuccessFull");
+
+      //Create JWT Token
+
+      const token = await jwt.sign({ _id: user._id }, "DEV@ZAMIL$786", { expiresIn: "7d" });
+      
+      //Add the token to the cookie and send the response back to the user
+
+      res.cookie("token", token, { expires: new Date(Date.now() + 8 * 3600000), });
+      res.send("Login Successfull!!!");
     } else {
       throw new Error("password is not Correct");
     }
@@ -54,69 +67,14 @@ app.post("/login", async (req, res) => {
   }
 });
 
-app.get("/user", async (req, res) => {
-    const userEmail = req.body.emailId;
+ 
 
-  try {
-    const user = await User.find({ emailId: userEmail });
-    if (user.length === 0) {
-      res.status(404).send("user not found");
-    } else {
-      res.send(user);
-    }
-    
-  } catch (err) {
-    res.status(404).send("something went wrong");
-  }
-});
-
-app.get("/feed", async (req, res) => {
-  try {
-    const users = await User.find({});
-    res.send(users);
-  } catch (err) {
-    res.status(404).send("something went wrong");
-  }
-});
-
-//Delete a User
-app.delete("/user", async (req, res) => {
-  const userId = req.body.userId;
-  try {
-    const user = await User.findByIdAndDelete({_id:userId});
-    res.send("User has been successfully Deleted");
-  } catch (err){
-    res.status(404).send("something went wrong");
-  }
-});
-
-//Update a user
-
-app.patch("/user/:id", async (req, res) => {
-  const userId = req.params.id;
-  const data = req.body;
-
-  try {
-    const ALLOWED_UPDATES = ["userId", "gender", "age", "photoUrl", "skills", "about"];
-    const isUpdateAllowed = Object.keys(data).every((k) =>
-      ALLOWED_UPDATES.includes(k)
-    );
-    if (!isUpdateAllowed) {
-      throw new Error("Update not Allowed");
-    }
+app.post("/sendConnectionRequest", userAuth, async (req, res) => {
+  const user = req.user;
+  console.log("sending connection Successfully");
   
-    const user = await User.findByIdAndUpdate({ _id: userId }, data, {
-      returnDocument: "after",
-      runValidators: "true",
-    });
-    console.log(user);
-    
-    res.send("User has been Updated Successfully");
-  } catch (err){
-    res.status(404).send("Something went wrong");
-  }
+  res.send(user.firstName + " Sent the Connection Request");
 });
-
 connectDB()
   .then(() => {
       console.log("Database connection established");
