@@ -42,11 +42,15 @@ const userSchema = new mongoose.Schema(
     },
     gender: {
       type: String,
-      validate(value) {
-        if (!["male", "female", "others"].includes(value)) {
-          throw new Error("Eneter Valid Gender:" + value);
-        }
+      enum: {
+        values: ["male", "female", "others"],
+        message: `{VALUE} IS NOT A GENDER TYPE`,
       },
+      // validate(value) {
+      //   if (!["male", "female", "others"].includes(value)) {
+      //     throw new Error("Eneter Valid Gender:" + value);
+      //   }
+      // },
     },
     photoUrl: {
       type: String,
@@ -84,12 +88,12 @@ userSchema.methods.validatePassword = async function (passwordInputByUser) {
   const user = this;
   const passwordHash = user.password;
 
-  const isPasswordValid = await bcrypt.compare(passwordInputByUser, passwordHash);
+  const isPasswordValid = await bcrypt.compare(
+    passwordInputByUser,
+    passwordHash
+  );
 
   return isPasswordValid;
-  
-}
+};
 
-
-
-module.exports = mongoose.model("User",userSchema);
+module.exports = mongoose.model("User", userSchema);
